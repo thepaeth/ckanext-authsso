@@ -1,0 +1,14 @@
+# authsso-js:
+#   filter: rjsmin
+#   output: ckanext-authsso/%(version)s-authsso.js
+#   contents:
+#     - js/authsso.js
+#   extra:
+#     preload:
+#       - base/main
+
+# authsso-css:
+#   filter: cssrewrite
+#   output: ckanext-authsso/%(version)s-authsso.css
+#   contents:
+#     - css/authsso.css
