@@ -17,7 +17,7 @@ queue = DEFAULT_QUEUE_NAME
 route_auth = Blueprint('authsso', __name__)
 authen_url = config.get('authsso.authen_host', 'http://172.16.99.1:8000')
 userinfo_path = config.get('authsso.authen_path', '/user/getinfo')
-authen_page = config.get('authsso.authen_page', '/login/')
+authen_page = config.get('authsso.authen_page', 'http://172.16.99.1:8000/login/')
 token_params = config.get('authsso.token_params', 'token')
 
 def generate_password():
@@ -64,7 +64,7 @@ def create_user(context, username, email, full_name, org=None):
 
 def login():
   if not g.user:
-    return toolkit.redirect_to('{}{}'.format(authen_url, authen_page))
+    return toolkit.redirect_to('{}'.format(authen_page))
   return toolkit.redirect_to('home.index')
 
 def auth():
