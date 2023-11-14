@@ -15,10 +15,10 @@ toolkit = p.toolkit
 
 queue = DEFAULT_QUEUE_NAME
 route_auth = Blueprint('authsso', __name__)
-authen_url = config.get('authsso.authen_host', 'http://172.16.99.1:8000')
-userinfo_path = config.get('authsso.authen_path', '/user/getinfo')
-authen_page = config.get('authsso.authen_page', 'http://172.16.99.1:8000/login/')
-token_params = config.get('authsso.token_params', 'token')
+authen_url = config.get('authsso.authen_host')
+userinfo_path = config.get('authsso.authen_path')
+authen_page = config.get('authsso.authen_page')
+token_params = config.get('authsso.token_params')
 
 def generate_password():
     alphabet = string.ascii_letters + string.digits

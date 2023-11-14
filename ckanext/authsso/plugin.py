@@ -17,6 +17,10 @@ class AuthssoPlugin(plugins.SingletonPlugin):
         toolkit.add_public_directory(config_, 'public')
         toolkit.add_resource('fanstatic',
             'authsso')
+        config_['authsso.authen_host']  = config_.get('authsso.authen_host', 'http://172.16.99.1:8000')
+        config_['authsso.authen_path']  = config_.get('authsso.authen_path', '/user/getinfo')
+        config_['authsso.authen_page']  = config_.get('authsso.authen_page', 'http://172.16.99.1:8000/login/')
+        config_['authsso.token_params'] = config_.get('authsso.token_params', 'token')
 
     # IBlueprint
     def get_blueprint(self):
