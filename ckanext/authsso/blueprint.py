@@ -37,6 +37,7 @@ def get_user_info(token):
       res = s.post(url='{}{}'.format(authen_url, userinfo_path), headers=headers)
   except requests.exceptions.RequestException as e:
     return None
+  log.info(res)
   return res.json()
 
 def get_ckan_user(email):
