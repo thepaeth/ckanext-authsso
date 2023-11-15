@@ -34,7 +34,7 @@ def get_user_info(token):
   try:
     with requests.Session() as s:
       s.verify = False
-      res = s.post(url='{}{}'.format(authen_url, userinfo_path), headers=headers)
+      res = s.post(url='{}{}'.format(authen_url, userinfo_path), headers=headers, verify=False)
   except requests.exceptions.RequestException as e:
     return None
   return res.json()
