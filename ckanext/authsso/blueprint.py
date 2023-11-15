@@ -1,7 +1,7 @@
 # encoding: utf-8
 from flask import Blueprint, make_response, request
 from ckan import plugins as p
-import logging, requests, json, string, secrets
+import logging, requests, json, string, secrets, os
 import ckan.model as model
 import ckan.logic as logic
 import ckan.lib.dictization.model_dictize as model_dictize
@@ -15,10 +15,10 @@ toolkit = p.toolkit
 
 queue = DEFAULT_QUEUE_NAME
 route_auth = Blueprint('authsso', __name__)
-authen_url = config.get('authsso.authen_host')
-userinfo_path = config.get('authsso.authen_path')
-authen_page = config.get('authsso.authen_page')
-token_params = config.get('authsso.token_params')
+authen_url = os.environ.get('CKAN___AUTHSSO__AUTHEN_HOST', config.get('authsso.authen_host'))
+userinfo_path = os.environ.get('CKAN___AUTHSSO__AUTHEN_PATH', config.get('authsso.authen_path'))
+authen_page = os.environ.get('CKAN___AUTHSSO__AUTHEN_PAGE', config.get('authsso.authen_page'))
+token_params = os.environ.get('CKAN___AUTHSSO__TOKEN_PARAMS', config.get('authsso.token_params'))
 
 def generate_password():
     alphabet = string.ascii_letters + string.digits
