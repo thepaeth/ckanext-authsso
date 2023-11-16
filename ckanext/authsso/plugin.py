@@ -7,7 +7,6 @@ log = logging.getLogger(__name__)
 
 class AuthssoPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
-    # plugins.implements(plugins.IAuthenticator)
     plugins.implements(plugins.IBlueprint)
 
     # IConfigurer
@@ -25,16 +24,5 @@ class AuthssoPlugin(plugins.SingletonPlugin):
     # IBlueprint
     def get_blueprint(self):
         return [route_auth]
-    # IAuthenticator
-    # def identify(self):
-    #     if toolkit.request.path not in [toolkit.url_for('authsso.login')]:
-    #         response = make_response(toolkit.request.path)
-    #     else:
-    #         toolkit.g.user = 'ckan_admin'
-    #         # return response
-    # def logout(self):
-    #     toolkit.g.user = None
-
-    #     return toolkit.redirect_to('home.index')
             
     

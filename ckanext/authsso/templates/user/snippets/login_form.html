@@ -1,0 +1,5 @@
+{% ckan_extends %}
+{% block login_button %}
+  <button class="btn btn-primary" type="submit">{{ _('Login') }}</button>
+  <a href="{{ g.authen_page_url }}" class="btn btn-info">{{ _('เข้าสู่ระบบด้วย SSO ')}}</a>
+{% endblock %}

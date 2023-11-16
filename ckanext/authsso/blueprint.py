@@ -3,15 +3,17 @@ from flask import Blueprint, make_response, request
 from ckan import plugins as p
 import logging, requests, json, string, secrets, os
 import ckan.model as model
-import ckan.logic as logic
+import ckan.logic as logic, ckan.lib.helpers as h
 import ckan.lib.dictization.model_dictize as model_dictize
 from ckan.lib import base
 from ckan.lib.jobs import DEFAULT_QUEUE_NAME
-from ckan.views.user import set_repoze_user
-from ckan.common import config, g
+from ckan.views.user import set_repoze_user, me, _get_repoze_handler
+from ckan.views.dashboard import index
+from ckan.common import config, g, c, request, _
 
 log = logging.getLogger(__name__)
 toolkit = p.toolkit
+render = base.render
 
 queue = DEFAULT_QUEUE_NAME
 route_auth = Blueprint('authsso', __name__)
@@ -26,7 +28,6 @@ def generate_password():
     return password
 
 def get_user_info(token):
-  # token = params['token']
   headers = {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer {}'.format(token)
@@ -34,10 +35,9 @@ def get_user_info(token):
   try:
     with requests.Session() as s:
       s.verify = False
-      res = s.post(url='{}{}'.format(authen_url, userinfo_path), headers=headers, verify=False)
+      res = s.get(url='{}{}'.format(authen_url, userinfo_path), headers=headers)
   except requests.exceptions.RequestException as e:
     return None
-  log.info(res)
   return res.json()
 
 def get_ckan_user(email):
@@ -64,9 +64,22 @@ def create_user(context, username, email, full_name, org=None):
   return user_dict
 
 def login():
-  if not g.user:
-    return toolkit.redirect_to('{}'.format(authen_page))
-  return toolkit.redirect_to('home.index')
+  for item in p.PluginImplementations(p.IAuthenticator):
+    response = item.login()
+    if response:
+      return response
+
+  extra_vars = {}
+  if g.user:
+    return render(u'user/logout_first.html', extra_vars)
+
+  came_from = request.params.get(u'came_from')
+  if not came_from:
+    came_from = h.url_for(u'user.logged_in')
+  g.login_handler = h.url_for(
+    _get_repoze_handler(u'login_handler_path'), came_from=came_from)
+  g.authen_page_url = authen_page
+  return render('user/login.html', extra_vars)
 
 def auth():
   token = request.args.get(token_params)
@@ -78,9 +91,8 @@ def auth():
   }
   userinfo = get_user_info(token)
   email = userinfo['internet_address']['email']['value']
-  # if user:
-  #   userinfo = userinfo['user_info']
-  #   user_email = userinfo['email']
+  if not email:
+    email = '{}@mail.tmp'.format(userinfo['uuid'])
   user = get_ckan_user(email)
   username = userinfo['uuid']
   fullname = '{} {}'.format(userinfo['name_th']['first_name']['value'], userinfo['name_th']['last_name']['value'])
@@ -89,19 +101,11 @@ def auth():
     user_dict = create_user(context, username, email, fullname)
   else:
     user_dict = model_dictize.user_dictize(user, context)
-  
-  log.info(user_dict)
   g.user = user_dict['name']
   g.userobj = model.User.by_name(g.user)
-  relay_state = request.form.get('RelayState')
-  redirect_target = toolkit.url_for(
-    str(relay_state), _external=True
-  ) if relay_state else 'user.me'
-  resp = toolkit.redirect_to(redirect_target)
+  resp = h.redirect_to(u'user.me')
   set_repoze_user(g.user, resp)
-
-  return resp
-  # return request.param.get('token')
+  return index()
 
 route_auth.add_url_rule('/user/login', view_func=login)
 route_auth.add_url_rule('/auth', view_func=auth)
