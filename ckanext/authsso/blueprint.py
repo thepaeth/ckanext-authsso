@@ -7,7 +7,7 @@ import ckan.logic as logic, ckan.lib.helpers as h
 import ckan.lib.dictization.model_dictize as model_dictize
 from ckan.lib import base
 from ckan.lib.jobs import DEFAULT_QUEUE_NAME
-from ckan.views.user import set_repoze_user, me, _get_repoze_handler
+from ckan.views.user import set_repoze_user, me, _get_repoze_handler, logged_in
 from ckan.views.dashboard import index
 from ckan.common import config, g, c, request, _
 
@@ -87,7 +87,8 @@ def auth():
   context = {
       u'ignore_auth': True,
       u'keep_email': True,
-      u'model': model
+      u'model': model,
+      u'session': model.Session
   }
   userinfo = get_user_info(token)
   email = userinfo['internet_address']['email']['value']
@@ -99,13 +100,18 @@ def auth():
 
   if not user:
     user_dict = create_user(context, username, email, fullname)
+    password = user.password
   else:
     user_dict = model_dictize.user_dictize(user, context)
+    password = generate_password()
+    user.password = password
+    user.save()
+  
   g.user = user_dict['name']
   g.userobj = model.User.by_name(g.user)
-  resp = h.redirect_to(u'user.me')
-  set_repoze_user(g.user, resp)
-  return index()
+  relay_state = request.form.get('RelayState')
+
+  return toolkit.redirect_to('/login_generic?came_from=/user/logged_in&login={}&password={}'. format(g.user, password))
 
 route_auth.add_url_rule('/user/login', view_func=login)
 route_auth.add_url_rule('/auth', view_func=auth)
