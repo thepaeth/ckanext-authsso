@@ -46,12 +46,39 @@ def get_ckan_user(email):
     ckan_user = ckan_users[0]
     return ckan_user
 
-def create_user(context, username, email, full_name, org=None):
-  data_dict ={
+def get_ckan_user_with_uuid(uuid):
+  ckan_users = model.User.filter(
+    User.plugin_extras['uuid'] == uuid
+  ).all()
+  if len(ckan_users) > 0:
+    ckan_user = ckan_users[0]
+    return ckan_user
+
+def get_userid(userinfo):
+  return userinfo['uuid']
+
+def get_citizen_id(userinfo):
+  return userinfo['person_id']['citizen_id']['value']
+
+def gen_username(citizen_id):
+  return 'dip-{}{}'.format(citizen_id[1:3], citizen_id[5:])
+
+def user_extra(uuid):
+  return {
+    'uuid': uuid,
+    'type': 'dip-eservice'
+  }
+
+def create_user(context, userinfo, email, full_name, org=None):
+  ctz = get_citizen_id(userinfo)
+  username = gen_username(ctz)
+  uuid = get_userid(userinfo)
+  data_dict = {
     'name': username,
     'fullname': full_name,
     'email': email,
-    'password': generate_password()
+    'password': ctz,
+    'plugin_extras': user_extra(uuid)
   }
 
   try:
@@ -60,8 +87,9 @@ def create_user(context, username, email, full_name, org=None):
     error_message = (e.error_summary or e.message or r.error_dict)
     log.error(error_message)
     base.abort(400, error_message)
-
+  
   return user_dict
+
 
 def login():
   for item in p.PluginImplementations(p.IAuthenticator):
@@ -97,21 +125,29 @@ def auth():
   user = get_ckan_user(email)
   username = userinfo['uuid']
   fullname = '{} {}'.format(userinfo['name_th']['first_name']['value'], userinfo['name_th']['last_name']['value'])
-
+  
   if not user:
-    user_dict = create_user(context, username, email, fullname)
-    password = user.password
+    user = get_ckan_user_with_uuid(get_userid(userinfo))
+    if not user:
+      user_dict = create_user(context, userinfo, email, fullname)
+    else:
+      user_dict = model_dictize.user_dictize(user, context)
   else:
     user_dict = model_dictize.user_dictize(user, context)
-    password = generate_password()
-    user.password = password
-    user.save()
-  
+    if user.plugin_extras is None:
+      user.name = gen_username(get_citizen_id(userinfo))
+      user.password = get_citizen_id(userinfo)
+      user.plugin_extras = user_extra(get_userid(userinfo))
+      user.save()
+
   g.user = user_dict['name']
   g.userobj = model.User.by_name(g.user)
   relay_state = request.form.get('RelayState')
 
-  return toolkit.redirect_to('/login_generic?came_from=/user/logged_in&login={}&password={}'. format(g.user, password))
+  resp = h.redirect_to(u'user.me')
+  set_repoze_user(user_dict['name'], resp)
+
+  return resp
 
 route_auth.add_url_rule('/user/login', view_func=login)
 route_auth.add_url_rule('/auth', view_func=auth)
