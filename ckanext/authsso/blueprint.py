@@ -1,7 +1,7 @@
 # encoding: utf-8
 from flask import Blueprint, make_response, request
 from ckan import plugins as p
-import logging, requests, json, string, secrets, os
+import logging, requests, json, string, secrets, os, sqlalchemy as sa
 import ckan.model as model
 import ckan.logic as logic, ckan.lib.helpers as h
 import ckan.lib.dictization.model_dictize as model_dictize
@@ -47,9 +47,10 @@ def get_ckan_user(email):
     return ckan_user
 
 def get_ckan_user_with_uuid(uuid):
-  ckan_users = model.User.filter(
-    User.plugin_extras['uuid'] == uuid
-  ).all()
+  ckan_users = model.Session.query(model.User).filter(
+      model.User.plugin_extras[('uuid',)].cast(sa.Text()) == uuid
+    ).all()
+  model.Session.remove()
   if len(ckan_users) > 0:
     ckan_user = ckan_users[0]
     return ckan_user
